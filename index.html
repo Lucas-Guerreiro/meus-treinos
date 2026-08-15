@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meus Treinos - Foco e Execução Perfeita</title>
+  <meta name="description" content="Organize seus treinos de academia e aprenda a execução correta de cada exercício com instruções detalhadas e cronômetro de descanso integrado.">
+  <!-- Google Fonts - Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- CSS Principal -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#080c16">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="brand">
+        <i data-lucide="dumbbell" class="logo-icon"></i>
+        <h1>Meus Treinos</h1>
+      </div>
+      <div class="header-date" id="current-date">Sábado, 15 de Ago</div>
+    </header>
+
+    <!-- MAIN VIEWS CONTAINER -->
+    <main class="app-main">
+      
+      <!-- VIEW: DASHBOARD -->
+      <section id="view-dashboard" class="app-view active">
+        <div class="welcome-card">
+          <div class="welcome-text">
+            <h2>Pronto para treinar?</h2>
+            <p>Selecione um treino abaixo ou crie uma nova rotina personalizada.</p>
+          </div>
+          <div class="welcome-stats">
+            <div class="stat-item">
+              <span class="stat-number" id="stats-total-treinos">0</span>
+              <span class="stat-label">Treinos Salvos</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="stats-concluidos-hoje">0</span>
+              <span class="stat-label">Hoje</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-header">
+          <h3>Suas Rotinas</h3>
+          <div class="dashboard-actions">
+            <button class="btn btn-secondary btn-sm" id="btn-importar-treino-view" title="Importar via Copia/Cola">
+              <i data-lucide="clipboard-paste" style="width:14px;height:14px;"></i> Importar
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-novo-treino-view">
+              <i data-lucide="plus" style="width:14px;height:14px;"></i> Novo
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de treinos (injetada por JS) -->
+        <div class="treinos-grid" id="treinos-list">
+          <div class="empty-state">
+            <i data-lucide="clipboard-list"></i>
+            <p>Nenhum treino criado ainda. Clique em "Novo Treino" para começar!</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: BIBLIOTECA DE EXERCÍCIOS -->
+      <section id="view-biblioteca" class="app-view">
+        <div class="section-title">
+          <h2>Biblioteca de Exercícios</h2>
+          <p>Como fazer: Aprenda a execução, postura e evite erros comuns.</p>
+        </div>
+
+        <div class="search-bar">
+          <i data-lucide="search"></i>
+          <input type="text" id="busca-exercicio" placeholder="Pesquisar exercício por nome...">
+        </div>
+
+        <!-- Filtros de Grupo Muscular -->
+        <div class="filter-scroll">
+          <div class="filter-container" id="filtro-grupos">
+            <button class="filter-chip active" data-grupo="todos">Todos</button>
+            <button class="filter-chip" data-grupo="Peito">Peito</button>
+            <button class="filter-chip" data-grupo="Costas">Costas</button>
+            <button class="filter-chip" data-grupo="Pernas">Pernas</button>
+            <button class="filter-chip" data-grupo="Ombros">Ombros</button>
+            <button class="filter-chip" data-grupo="Braços">Braços</button>
+            <button class="filter-chip" data-grupo="Core">Core</button>
+          </div>
+        </div>
+
+        <!-- Lista de exercícios (injetada por JS) -->
+        <div class="exercicios-lista" id="exercicios-lista-container"></div>
+      </section>
+
+      <!-- VIEW: IMPORTAR TREINO (COPIA E COLA) -->
+      <section id="view-importar-treino" class="app-view">
+        <div class="view-header">
+          <button class="btn btn-text" id="btn-cancelar-importacao">
+            <i data-lucide="arrow-left"></i> Voltar
+          </button>
+          <h2>Importar Treinos</h2>
+        </div>
+
+        <div class="import-instructions">
+          <p>Cole o texto do seu treino copiado de planilhas, WhatsApp ou PDF. O app criará automaticamente um treino para cada dia ou bloco detectado!</p>
+          <div class="tip-box">
+            <h5>💡 Dica de Formato:</h5>
+            <p>Você pode colar tabelas inteiras (como a da imagem) ou texto simples como:</p>
+            <div class="code-preview">
+Segunda-feira
+Supino reto - 4 - Contração de pico
+Remada baixa - 3 - Drop set
+            </div>
+          </div>
+        </div>
+
+        <form id="form-importar" onsubmit="event.preventDefault();">
+          <div class="form-group">
+            <label for="import-text-input">Texto Copiado do Treino</label>
+            <textarea id="import-text-input" placeholder="Cole o treino aqui..." rows="10" required></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary btn-large" id="btn-cancelar-importacao-alt">Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-large" id="btn-processar-importacao">Importar e Gerar</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- VIEW: CRIAR/EDITAR TREINO -->
+      <section id="view-cadastro-treino" class="app-view">
+        <div class="view-header">
+          <button class="btn btn-text" id="btn-cancelar-cadastro">
+            <i data-lucide="arrow-left"></i> Voltar
+          </button>
+          <h2 id="cadastro-titulo">Criar Novo Treino</h2>
+        </div>
+
+        <form id="form-treino" onsubmit="event.preventDefault();">
+          <input type="hidden" id="cadastro-treino-id">
+          
+          <div class="form-group">
+            <label for="treino-nome">Nome do Treino</label>
+            <input type="text" id="treino-nome" placeholder="Ex: Treino A - Peito e Tríceps" required>
+          </div>
+
+          <div class="form-group">
+            <label for="treino-descricao">Descrição (Opcional)</label>
+            <input type="text" id="treino-descricao" placeholder="Ex: Foco em força, 3x na semana">
+          </div>
+
+          <div class="exercicios-selecionados-container">
+            <div class="section-subheader">
+              <h3>Exercícios do Treino</h3>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-abrir-seletor-exercicio">
+                <i data-lucide="plus"></i> Adicionar
+              </button>
+            </div>
+
+            <!-- Lista de exercícios selecionados para o treino -->
+            <div id="lista-exercicios-selecionados" class="exercicios-selecionados-list">
+              <div class="empty-state-sm">
+                <p>Nenhum exercício adicionado a este treino.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary btn-large" id="btn-cancelar-cadastro-alt">Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-large" id="btn-salvar-treino">Salvar Treino</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- VIEW: TREINO ATIVO (PLAYER) -->
+      <section id="view-treino-ativo" class="app-view">
+        <div class="active-workout-header">
+          <div class="active-workout-title-container">
+            <span class="badge badge-active">Treino Ativo</span>
+            <h2 id="ativo-nome-treino">Treino A</h2>
+          </div>
+          <button class="btn btn-danger btn-sm" id="btn-cancelar-treino-ativo" title="Cancelar Treino">
+            <i data-lucide="x"></i> Sair
+          </button>
+        </div>
+
+        <!-- Barra de Progresso Geral -->
+        <div class="progress-container">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="ativo-barra-progresso" style="width: 0%;"></div>
+          </div>
+          <div class="progress-labels">
+            <span id="ativo-txt-progresso-series">0/12 séries</span>
+            <span id="ativo-pct-progresso">0% concluído</span>
+          </div>
+        </div>
+
+        <!-- Card do Exercício Atual -->
+        <div class="active-exercise-card" id="ativo-exercicio-card">
+          <!-- Conteúdo dinâmico injetado por JS -->
+          <div class="active-exercise-main">
+            <div class="active-exercise-info">
+              <span class="exercise-group-badge" id="ativo-grupo-exercicio">Peito</span>
+              <h3 id="ativo-nome-exercicio">Supino Reto</h3>
+              <p class="exercise-params" id="ativo-parametros-exercicio">4 séries &bull; 10 repetições &bull; 30kg</p>
+            </div>
+            
+            <!-- Botão de ajuda de execução -->
+            <button class="btn btn-circle" id="btn-toggle-como-fazer" title="Ver instrução de execução">
+              <i data-lucide="help-circle"></i>
+            </button>
+          </div>
+
+          <!-- Mídia e Vídeo do Exercício -->
+          <div id="ativo-media-container" class="active-exercise-media"></div>
+
+          <!-- Guia de Como Fazer (Colapsável) -->
+          <div class="how-to-execute collapsed" id="ativo-como-fazer-container">
+            <h4><i data-lucide="info"></i> Guia de Execução Correta</h4>
+            <div class="how-to-content">
+              <h5>Passo a passo:</h5>
+              <ol id="ativo-passos-lista"></ol>
+              
+              <h5>Dica de Ouro:</h5>
+              <p id="ativo-dica-txt"></p>
+              
+              <div class="warning-box">
+                <h5><i data-lucide="alert-triangle"></i> Evite estes Erros:</h5>
+                <p id="ativo-erros-txt"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de Séries (Checklist de conclusão) -->
+          <div class="series-check-section">
+            <h4>Marque as séries concluídas:</h4>
+            <div class="series-check-list" id="ativo-series-checklist">
+              <!-- Checkboxes de séries dinâmicos -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Navegação entre exercícios -->
+        <div class="workout-navigation">
+          <button class="btn btn-secondary" id="btn-ex-anterior">
+            <i data-lucide="chevron-left"></i> Anterior
+          </button>
+          <span class="exercise-counter" id="ativo-contador-exercicio">Exercício 1 de 4</span>
+          <button class="btn btn-secondary" id="btn-ex-proximo">
+            Próximo <i data-lucide="chevron-right"></i>
+          </button>
+        </div>
+
+        <div class="workout-footer">
+          <button class="btn btn-success btn-large" id="btn-finalizar-treino">
+            <i data-lucide="check-check"></i> Finalizar Treino
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- NAV BAR INFERIOR (Mobile-First Navigation) -->
+    <nav class="app-nav">
+      <button class="nav-item active" id="nav-btn-dashboard">
+        <i data-lucide="layout-grid"></i>
+        <span>Treinos</span>
+      </button>
+      <button class="nav-item" id="nav-btn-biblioteca">
+        <i data-lucide="book-open"></i>
+        <span>Biblioteca</span>
+      </button>
+      <button class="nav-item disabled" id="nav-btn-treino-ativo">
+        <i data-lucide="play"></i>
+        <span>No Treino</span>
+      </button>
+    </nav>
+
+    <!-- MODAL: SELECIONAR EXERCÍCIO -->
+    <div class="modal-backdrop" id="modal-seletor-exercicio">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Selecionar Exercício</h3>
+          <button class="btn btn-circle btn-close-modal" id="btn-fechar-seletor">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="search-bar">
+            <i data-lucide="search"></i>
+            <input type="text" id="busca-seletor" placeholder="Procurar ou criar exercício...">
+          </div>
+          
+          <div class="custom-exercise-trigger" id="custom-exercise-box">
+            <p>Não achou o exercício? <strong>Cadastre um personalizado</strong>:</p>
+            <button class="btn btn-secondary btn-sm" id="btn-criar-customizado">
+              Criar "<span></span>"
+            </button>
+          </div>
+
+          <div class="seletor-lista-grupos" id="seletor-exercicios-container">
+            <!-- Exercícios agrupados serão injetados aqui -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICAÇÃO/MODAL FLUTUANTE DE CRONÔMETRO DE DESCANSO -->
+    <div class="timer-overlay" id="timer-rest-overlay">
+      <div class="timer-card">
+        <div class="timer-header">
+          <i data-lucide="hourglass" class="timer-icon-animate"></i>
+          <span>Hora de Descansar</span>
+        </div>
+        <div class="timer-display" id="timer-display-digits">01:00</div>
+        <div class="timer-progress">
+          <div class="timer-progress-fill" id="timer-progress-bar" style="width: 100%;"></div>
+        </div>
+        <div class="timer-actions">
+          <button class="btn btn-secondary btn-sm" id="btn-timer-add-15">
+            +15s
+          </button>
+          <button class="btn btn-primary" id="btn-timer-pular">
+            Pular Descanso
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="exercicios.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
