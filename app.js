@@ -223,6 +223,10 @@ function inicializarEventos() {
 
   // Ações do Modal Mover Exercício
   document.getElementById('btn-fechar-mover').addEventListener('click', fecharModalMover);
+
+  // Ações do Modal Selecionar Dia
+  document.getElementById('btn-cadastro-escolher-dia').addEventListener('click', () => abrirModalSelecionarDia('cadastro'));
+  document.getElementById('btn-fechar-selecionar-dia').addEventListener('click', fecharModalSelecionarDia);
 }
 
 // NAVEGAÇÃO DE TELAS (Single Page Application)
@@ -308,6 +312,12 @@ function renderizarDashboard() {
           <p>${treino.descricao || 'Sem descrição'}</p>
         </div>
         <div class="treino-actions-top">
+          <button class="btn btn-circle btn-sm" onclick="reordenarTreino('${treino.id}', -1)" title="Mover para Cima">
+            <i data-lucide="arrow-up" style="width:14px;height:14px;"></i>
+          </button>
+          <button class="btn btn-circle btn-sm" onclick="reordenarTreino('${treino.id}', 1)" title="Mover para Baixo">
+            <i data-lucide="arrow-down" style="width:14px;height:14px;"></i>
+          </button>
           <button class="btn btn-circle btn-sm" onclick="editarTreino('${treino.id}')" title="Editar">
             <i data-lucide="edit-3" style="width:14px;height:14px;"></i>
           </button>
@@ -1657,28 +1667,94 @@ function moverExercicioConfirmado(treinoDestinoId) {
   alert(`Exercício "${exercicioParaMover.nome}" movido com sucesso para "${treinoDestino.nome}"! 🔄`);
 }
 
-// EDICAO RAPIDA DE DIA OU NOME DO TREINO
+// EDICAO RAPIDA DE DIA OU NOME DO TREINO (ABRE O SELETOR VISUAL)
 window.renomearTreinoRapido = function(treinoId) {
-  const treino = state.treinos.find(t => t.id === treinoId);
-  if (!treino) return;
+  abrirModalSelecionarDia('dashboard', treinoId);
+};
 
-  const novoNome = prompt('Alterar o dia ou nome do treino:', treino.nome);
-  if (novoNome === null) return; // Clicou em cancelar
+// --- SELETOR DE DIA E REORDENAÇÃO DE TREINOS ---
 
-  const nomeLimpo = novoNome.trim();
-  if (!nomeLimpo) {
-    alert('O nome do treino não pode estar vazio.');
-    return;
+let dadosSelecionarDiaTemporarios = {
+  origem: null, // 'dashboard' ou 'cadastro'
+  treinoId: null
+};
+
+// ABRIR SELETOR DE DIAS
+window.abrirModalSelecionarDia = function(origem, treinoId = null) {
+  dadosSelecionarDiaTemporarios.origem = origem;
+  dadosSelecionarDiaTemporarios.treinoId = treinoId;
+  
+  document.getElementById('modal-selecionar-dia').style.display = 'flex';
+};
+
+// FECHAR SELETOR DE DIAS
+window.fecharModalSelecionarDia = function() {
+  document.getElementById('modal-selecionar-dia').style.display = 'none';
+  dadosSelecionarDiaTemporarios = { origem: null, treinoId: null };
+};
+
+// CONFIRMAÇÃO DE SELEÇÃO DO DIA
+window.selecionarDiaConfirmado = function(diaNome) {
+  const { origem, treinoId } = dadosSelecionarDiaTemporarios;
+  
+  if (origem === 'cadastro') {
+    document.getElementById('treino-nome').value = diaNome;
+  } else if (origem === 'dashboard' && treinoId) {
+    const treino = state.treinos.find(t => t.id === treinoId);
+    if (treino) {
+      treino.nome = diaNome;
+      
+      // Se for o ativo, atualiza o nome do header
+      if (state.treinoAtivo && state.treinoAtivo.id === treinoId) {
+        state.treinoAtivo.nome = diaNome;
+        document.getElementById('ativo-nome-treino').innerText = diaNome;
+        salvarEstadoTreinoAtivo();
+      }
+      
+      salvarDados();
+      renderizarDashboard();
+    }
   }
+  
+  fecharModalSelecionarDia();
+};
 
-  treino.nome = nomeLimpo;
-
-  // Updates no treino ativo se for o mesmo
-  if (state.treinoAtivo && state.treinoAtivo.id === treinoId) {
-    state.treinoAtivo.nome = nomeLimpo;
-    document.getElementById('ativo-nome-treino').innerText = nomeLimpo;
-    salvarEstadoTreinoAtivo();
+// DIGITAR NOME PERSONALIZADO
+window.selecionarDiaPersonalizado = function() {
+  const { origem, treinoId } = dadosSelecionarDiaTemporarios;
+  let valorAtual = '';
+  
+  if (origem === 'cadastro') {
+    valorAtual = document.getElementById('treino-nome').value;
+  } else if (origem === 'dashboard' && treinoId) {
+    const treino = state.treinos.find(t => t.id === treinoId);
+    if (treino) valorAtual = treino.nome;
   }
+  
+  const personalizado = prompt('Digite o nome ou dia do treino personalizado:', valorAtual);
+  if (personalizado !== null) {
+    const nomeLimpo = personalizado.trim();
+    if (nomeLimpo) {
+      selecionarDiaConfirmado(nomeLimpo);
+    } else {
+      alert('O nome do treino não pode estar vazio.');
+    }
+  }
+};
+
+// REORDENAR TREINOS NO DASHBOARD (SUBSTITUTO ROBUSTO E FÁCIL PARA ARRASTAR NO MOBILE)
+window.reordenarTreino = function(treinoId, direcao) {
+  const index = state.treinos.findIndex(t => t.id === treinoId);
+  if (index === -1) return;
+
+  const novoIndex = index + direcao;
+  // Verifica limites
+  if (novoIndex < 0 || novoIndex >= state.treinos.length) return;
+
+  // Troca posições no array
+  const temp = state.treinos[index];
+  state.treinos[index] = state.treinos[novoIndex];
+  state.treinos[novoIndex] = temp;
 
   salvarDados();
   renderizarDashboard();

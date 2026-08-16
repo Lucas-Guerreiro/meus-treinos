@@ -159,8 +159,13 @@ Remada baixa - 3 - Drop set
           <input type="hidden" id="cadastro-treino-id">
           
           <div class="form-group">
-            <label for="treino-nome">Nome do Treino</label>
-            <input type="text" id="treino-nome" placeholder="Ex: Treino A - Peito e Tríceps" required>
+            <label for="treino-nome">Nome do Treino / Dia</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="treino-nome" placeholder="Ex: Segunda-feira" style="flex: 1;" required>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-cadastro-escolher-dia" style="padding: 0 12px; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+                <i data-lucide="calendar"></i> Escolher...
+              </button>
+            </div>
           </div>
 
           <div class="form-group">
@@ -341,6 +346,47 @@ Remada baixa - 3 - Drop set
           </div>
           <div class="seletor-itens-grid" id="mover-destinos-container" style="display: flex; flex-direction: column; gap: 8px;">
             <!-- Destinos injetados por JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: SELECIONAR DIA DO TREINO -->
+    <div class="modal-backdrop" id="modal-selecionar-dia">
+      <div class="modal-content" style="max-width: 360px;">
+        <div class="modal-header">
+          <h3>Definir Dia / Nome</h3>
+          <button class="btn btn-circle btn-close-modal" id="btn-fechar-selecionar-dia">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Escolha o dia da semana para este treino:</p>
+          
+          <div class="dias-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px;">
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Segunda-feira')" style="padding: 10px; font-weight: 600;">Segunda-feira</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Terça-feira')" style="padding: 10px; font-weight: 600;">Terça-feira</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Quarta-feira')" style="padding: 10px; font-weight: 600;">Quarta-feira</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Quinta-feira')" style="padding: 10px; font-weight: 600;">Quinta-feira</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Sexta-feira')" style="padding: 10px; font-weight: 600;">Sexta-feira</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Sábado')" style="padding: 10px; font-weight: 600;">Sábado</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Domingo')" style="padding: 10px; font-weight: 600;">Domingo</button>
+          </div>
+          
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">Ou divisões de treino:</p>
+          <div class="dias-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 16px;">
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Treino A')" style="padding: 6px; font-size: 0.75rem;">Treino A</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Treino B')" style="padding: 6px; font-size: 0.75rem;">Treino B</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Treino C')" style="padding: 6px; font-size: 0.75rem;">Treino C</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Treino D')" style="padding: 6px; font-size: 0.75rem;">Treino D</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Treino E')" style="padding: 6px; font-size: 0.75rem;">Treino E</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-dia-opcao" onclick="selecionarDiaConfirmado('Cardio')" style="padding: 6px; font-size: 0.75rem;">Cardio</button>
+          </div>
+
+          <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
+            <button type="button" class="btn btn-primary btn-sm btn-large" onclick="selecionarDiaPersonalizado()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              Digitar Nome Customizado...
+            </button>
           </div>
         </div>
       </div>
