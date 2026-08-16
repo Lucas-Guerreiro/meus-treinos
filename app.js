@@ -4,7 +4,7 @@ let state = {
   treinoAtivo: null,
   historico: [],
   exercicioAtivoIndex: 0,
-  seriesConcluidas: [], // Array de arrays de booleanos: [[false, false], [false, false, false]]
+  seriesProgresso: [], // Array de arrays de objetos: [[{concluida: false, carga: 10, repeticoes: 10}]]
   timerInterval: null,
   timerSegundosRestantes: 0,
   timerSegundosTotais: 0,
@@ -328,6 +328,7 @@ function renderizarDashboard() {
     treinosList.appendChild(card);
   });
   
+  renderizarHistoricoDashboard();
   lucide.createIcons();
 }
 
@@ -713,9 +714,13 @@ window.iniciarTreino = function(treinoId) {
   state.treinoAtivo = treino;
   state.exercicioAtivoIndex = 0;
   
-  // Cria array de estado das séries (todas não concluídas no início)
-  state.seriesConcluidas = treino.exercicios.map(ex => {
-    return Array(ex.series).fill(false);
+  // Cria array de estado detalhado das séries (conclusão, carga e reps iniciais)
+  state.seriesProgresso = treino.exercicios.map(ex => {
+    return Array.from({ length: ex.series }, () => ({
+      concluida: false,
+      carga: ex.carga,
+      repeticoes: ex.repeticoes
+    }));
   });
 
   // Habilita e atualiza a aba No Treino
@@ -864,19 +869,24 @@ function renderizarChecklistSeries() {
   checklist.innerHTML = '';
 
   const ex = state.treinoAtivo.exercicios[state.exercicioAtivoIndex];
-  const estadoDasSeries = state.seriesConcluidas[state.exercicioAtivoIndex];
+  const estadoDasSeries = state.seriesProgresso[state.exercicioAtivoIndex];
 
   for (let i = 0; i < ex.series; i++) {
-    const serieConcluida = estadoDasSeries[i];
+    const dadosSerie = estadoDasSeries[i];
     
     const row = document.createElement('div');
-    row.className = `series-row ${serieConcluida ? 'completed' : ''}`;
+    row.className = `series-row ${dadosSerie.concluida ? 'completed' : ''}`;
     row.innerHTML = `
       <div class="series-row-info">
         <span class="series-number">${i + 1}</span>
-        <span class="series-details">${ex.carga} kg &times; ${ex.repeticoes} reps</span>
+        <div class="series-inputs">
+          <input type="number" class="input-serie-carga" value="${dadosSerie.carga}" min="0" onchange="atualizarCargaSerie(${i}, this.value)" ${dadosSerie.concluida ? 'disabled' : ''} title="Ajustar peso">
+          <span class="series-x">kg &times;</span>
+          <input type="text" class="input-serie-reps" value="${dadosSerie.repeticoes}" onchange="atualizarRepsSerie(${i}, this.value)" ${dadosSerie.concluida ? 'disabled' : ''} title="Ajustar repetições">
+          <span class="series-reps-lbl">reps</span>
+        </div>
       </div>
-      <button class="btn-check-serie" onclick="toggleSerie(${i})" title="${serieConcluida ? 'Desmarcar série' : 'Concluir série'}">
+      <button class="btn-check-serie" onclick="toggleSerie(${i})" title="${dadosSerie.concluida ? 'Desmarcar' : 'Concluir'}">
         <i data-lucide="check" style="width:16px;height:16px"></i>
       </button>
     `;
@@ -890,10 +900,11 @@ function renderizarChecklistSeries() {
 window.toggleSerie = function(serieIndex) {
   const exIndex = state.exercicioAtivoIndex;
   const ex = state.treinoAtivo.exercicios[exIndex];
-  const estadoAtual = state.seriesConcluidas[exIndex][serieIndex];
+  const dadosSerie = state.seriesProgresso[exIndex][serieIndex];
+  const estadoAtual = dadosSerie.concluida;
   
   // Inverte
-  state.seriesConcluidas[exIndex][serieIndex] = !estadoAtual;
+  dadosSerie.concluida = !estadoAtual;
   
   renderizarChecklistSeries();
   atualizarProgressoGeral();
@@ -913,9 +924,9 @@ function atualizarProgressoGeral() {
   let totalSeries = 0;
   let concluidas = 0;
 
-  state.seriesConcluidas.forEach(exSeries => {
+  state.seriesProgresso.forEach(exSeries => {
     totalSeries += exSeries.length;
-    concluidas += exSeries.filter(s => s === true).length;
+    concluidas += exSeries.filter(s => s.concluida === true).length;
   });
 
   const pct = totalSeries > 0 ? Math.round((concluidas / totalSeries) * 100) : 0;
@@ -964,15 +975,14 @@ function cancelarTreinoAtivoSilencioso() {
   salvarEstadoTreinoAtivo();
 }
 
-// FINALIZAR TREINO COM HISTÓRICO
+// FINALIZAR TREINO COM HISTÓRICO DETALHADO DE CARGAS/REPS
 function finalizarTreino() {
-  // Opcional: Avisar se não concluiu todas as séries
   let totalSeries = 0;
   let concluidas = 0;
   
-  state.seriesConcluidas.forEach(exSeries => {
+  state.seriesProgresso.forEach(exSeries => {
     totalSeries += exSeries.length;
-    concluidas += exSeries.filter(s => s === true).length;
+    concluidas += exSeries.filter(s => s.concluida === true).length;
   });
 
   if (concluidas === 0) {
@@ -986,14 +996,27 @@ function finalizarTreino() {
     }
   }
 
+  // Monta histórico de exercícios e cargas executadas de fato
+  const exerciciosRealizados = state.treinoAtivo.exercicios.map((ex, exIdx) => {
+    const seriesDoEx = state.seriesProgresso[exIdx];
+    return {
+      nome: ex.nome,
+      grupo: ex.grupo,
+      series: seriesDoEx.map(s => ({
+        concluida: s.concluida,
+        carga: s.carga,
+        repeticoes: s.repeticoes
+      }))
+    };
+  });
+
   // Registra no histórico
   const registro = {
     id: 'hist-' + Date.now(),
     treinoId: state.treinoAtivo.id,
     treinoNome: state.treinoAtivo.nome,
     dataConclusao: new Date().toISOString(),
-    seriesTotais: totalSeries,
-    seriesConcluidas: concluidas
+    exercicios: exerciciosRealizados
   };
 
   state.historico.push(registro);
@@ -1394,7 +1417,7 @@ function salvarEstadoTreinoAtivo(abaDesejada = null) {
   const estadoParaSalvar = {
     treinoAtivo: state.treinoAtivo,
     exercicioAtivoIndex: state.exercicioAtivoIndex,
-    seriesConcluidas: state.seriesConcluidas,
+    seriesProgresso: state.seriesProgresso,
     abaAtiva: abaDesejada || obterAbaAtiva(),
     timestamp: Date.now()
   };
@@ -1421,7 +1444,21 @@ function recuperarEstadoTreinoAtivo() {
       // Restaura o estado em memória
       state.treinoAtivo = estado.treinoAtivo;
       state.exercicioAtivoIndex = estado.exercicioAtivoIndex;
-      state.seriesConcluidas = estado.seriesConcluidas;
+      
+      // Suporte a migração do estado antigo
+      if (estado.seriesProgresso) {
+        state.seriesProgresso = estado.seriesProgresso;
+      } else if (estado.seriesConcluidas) {
+        // Migração automática
+        state.seriesProgresso = estado.seriesConcluidas.map((exSeries, exIdx) => {
+          const ex = estado.treinoAtivo.exercicios[exIdx];
+          return exSeries.map(concluida => ({
+            concluida: concluida,
+            carga: ex ? ex.carga : 10,
+            repeticoes: ex ? ex.repeticoes : '10'
+          }));
+        });
+      }
 
       // Habilita a aba de treino ativo
       const navBtnAtivo = document.getElementById('nav-btn-treino-ativo');
@@ -1442,6 +1479,93 @@ function recuperarEstadoTreinoAtivo() {
     console.error("Erro ao recuperar estado do treino ativo:", e);
     localStorage.removeItem('meus-treinos-estado-ativo');
   }
+}
+
+// ATUALIZAR VALORES DE CARGA POR SÉRIE INDIVIDUAL NO PLAYER
+window.atualizarCargaSerie = function(serieIndex, valor) {
+  const exIndex = state.exercicioAtivoIndex;
+  if (state.seriesProgresso[exIndex] && state.seriesProgresso[exIndex][serieIndex]) {
+    state.seriesProgresso[exIndex][serieIndex].carga = parseFloat(valor) || 0;
+    salvarEstadoTreinoAtivo();
+  }
+};
+
+// ATUALIZAR VALORES DE REPETIÇÕES POR SÉRIE INDIVIDUAL NO PLAYER
+window.atualizarRepsSerie = function(serieIndex, valor) {
+  const exIndex = state.exercicioAtivoIndex;
+  if (state.seriesProgresso[exIndex] && state.seriesProgresso[exIndex][serieIndex]) {
+    state.seriesProgresso[exIndex][serieIndex].repeticoes = valor.toString().trim() || '10';
+    salvarEstadoTreinoAtivo();
+  }
+};
+
+// RENDERIZAR O HISTÓRICO DE TREINOS CONCLUÍDOS NO DASHBOARD
+function renderizarHistoricoDashboard() {
+  const container = document.getElementById('historico-lista-container');
+  if (!container) return;
+  
+  if (state.historico.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state-sm" style="padding: 24px;">
+        <p>Nenhum treino finalizado recentemente.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = '';
+  
+  // Mostra apenas os últimos 5 treinos concluídos em ordem decrescente de data
+  const historicoOrdenado = [...state.historico].reverse().slice(0, 5);
+  
+  historicoOrdenado.forEach((reg, idx) => {
+    const card = document.createElement('div');
+    card.className = 'historico-card';
+    
+    const dataFormatada = new Date(reg.dataConclusao).toLocaleDateString('pt-BR', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    // Cria a lista de exercícios realizados com suas respectivas séries
+    let exListHtml = '';
+    if (reg.exercicios) {
+      exListHtml = reg.exercicios.map(ex => {
+        const seriesHtml = ex.series.filter(s => s.concluida).map((s, sIdx) => `${s.carga}kg x ${s.repeticoes}`).join(' | ');
+        return `
+          <div class="historico-ex-row">
+            <span class="historico-ex-nome">${ex.nome}</span>
+            <span class="historico-ex-series">${seriesHtml || '<span style="color:var(--danger)">Sem séries concluídas</span>'}</span>
+          </div>
+        `;
+      }).join('');
+    } else {
+      // Legado (treinos anteriores à atualização de histórico detalhado)
+      exListHtml = `
+        <div class="historico-ex-row">
+          <span class="historico-ex-nome" style="color:var(--text-muted)">Dados detalhados indisponíveis.</span>
+          <span class="historico-ex-series">${reg.seriesConcluidas}/${reg.seriesTotais} séries</span>
+        </div>
+      `;
+    }
+    
+    const cardId = `hist-card-${idx}`;
+    card.innerHTML = `
+      <div class="historico-card-header" onclick="document.getElementById('${cardId}').classList.toggle('collapsed')">
+        <div class="historico-card-title">
+          <strong>${reg.treinoNome}</strong>
+          <span>${dataFormatada}</span>
+        </div>
+        <i data-lucide="chevron-down" style="width:16px;height:16px;color:var(--text-muted)"></i>
+      </div>
+      <div class="historico-card-body collapsed" id="${cardId}">
+        ${exListHtml}
+      </div>
+    `;
+    container.appendChild(card);
+  });
 }
 
 // --- LOGICA DE MOVIMENTAÇÃO DE EXERCÍCIOS E RENOMEAÇÃO DE DIAS ---

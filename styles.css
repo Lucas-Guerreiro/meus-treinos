@@ -1506,3 +1506,142 @@ textarea#import-text-input:focus {
   color: var(--primary);
   background-color: rgba(37, 99, 235, 0.1);
 }
+
+/* INPUTS INTERATIVOS DE SÉRIES */
+.series-inputs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.input-serie-carga, .input-serie-reps {
+  background-color: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-family: var(--font-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px 6px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input-serie-carga {
+  width: 54px;
+}
+
+.input-serie-reps {
+  width: 48px;
+}
+
+.input-serie-carga:focus, .input-serie-reps:focus {
+  border-color: var(--border-focus);
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+.series-x {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin: 0 2px;
+}
+
+.series-reps-lbl {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+/* Quando concluído, desativa a edição visualmente */
+.series-row.completed input {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  opacity: 0.6;
+  border-color: transparent;
+  background-color: transparent;
+  pointer-events: none;
+}
+
+/* CARDS DO HISTÓRICO DE TREINOS */
+.historico-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.historico-card-header {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.01);
+}
+
+.historico-card-header:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.historico-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.historico-card-title strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.historico-card-title span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.historico-card-body {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  background-color: rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: slideDown 0.2s ease-out forwards;
+}
+
+.historico-card-body.collapsed {
+  display: none;
+}
+
+.historico-ex-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 0.82rem;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.historico-ex-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.historico-ex-nome {
+  font-weight: 600;
+  color: var(--text-main);
+  max-width: 50%;
+}
+
+.historico-ex-series {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.78rem;
+  text-align: right;
+  max-width: 48%;
+}
