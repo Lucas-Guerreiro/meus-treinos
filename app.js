@@ -277,7 +277,7 @@ function renderizarDashboard() {
     card.className = 'treino-card';
     
     // Lista curta de nomes dos exercícios
-    const exTags = treino.exercicios.map(ex => `<span class="exercise-tag">${ex.nome}</span>`).join('');
+    const exTags = treino.exercicios.map(ex => `<span class="exercise-tag">${ex.nome} (${ex.grupo})</span>`).join('');
     
     card.innerHTML = `
       <div class="treino-card-header">
@@ -328,7 +328,7 @@ function inicializarBiblioteca() {
       <div class="exercicio-item-header" onclick="toggleCardBiblioteca('${ex.id}')">
         <div class="exercicio-item-header-info">
           <span class="exercise-group-badge">${ex.grupo}</span>
-          <h4>${ex.nome}</h4>
+          <h4>${ex.nome} (${ex.grupo})</h4>
         </div>
         <i data-lucide="chevron-down"></i>
       </div>
@@ -447,7 +447,7 @@ function renderizarExerciciosTemporarios() {
       <div class="cadastro-exercise-header">
         <div>
           <span class="exercise-group-badge">${ex.grupo}</span>
-          <h4>${ex.nome}</h4>
+          <h4>${ex.nome} (${ex.grupo})</h4>
         </div>
         <button type="button" class="btn btn-circle btn-sm" onclick="removerExCadastro(${idx})" style="color:var(--danger)" title="Remover Exercício">
           <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
@@ -605,7 +605,7 @@ function renderizarListaSeletor() {
       btn.type = 'button';
       btn.className = 'seletor-item-btn';
       btn.innerHTML = `
-        <span>${ex.nome}</span>
+        <span>${ex.nome} (${ex.grupo})</span>
         <i data-lucide="plus-circle"></i>
       `;
       btn.onclick = () => selecionarExDoBanco(ex);
@@ -710,7 +710,7 @@ window.iniciarTreino = function(treinoId) {
 function renderizarExercicioAtivo() {
   const ex = state.treinoAtivo.exercicios[state.exercicioAtivoIndex];
   
-  document.getElementById('ativo-nome-exercicio').innerText = ex.nome;
+  document.getElementById('ativo-nome-exercicio').innerText = `${ex.nome} (${ex.grupo})`;
   document.getElementById('ativo-grupo-exercicio').innerText = ex.grupo;
   document.getElementById('ativo-parametros-exercicio').innerHTML = `${ex.series} séries &bull; ${ex.repeticoes} reps &bull; ${ex.carga}kg &bull; Desc. ${ex.descanso}s`;
 
