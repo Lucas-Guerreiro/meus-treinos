@@ -1437,3 +1437,72 @@ textarea#import-text-input:focus {
   gap: 6px;
   margin-bottom: 12px;
 }
+
+/* LISTA DE EXERCÍCIOS NO DASHBOARD COM MOVIMENTAÇÃO RÁPIDA */
+.dashboard-exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.dashboard-exercise-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+}
+
+.dashboard-exercise-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-mover-ex-quick {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-mover-ex-quick:hover {
+  color: var(--primary);
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+/* EDICAO RAPIDA DE NOME DO TREINO */
+.treino-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-renomear-treino-quick {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-renomear-treino-quick:hover {
+  color: var(--primary);
+  background-color: rgba(37, 99, 235, 0.1);
+}

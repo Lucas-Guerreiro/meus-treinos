@@ -314,6 +314,28 @@ Remada baixa - 3 - Drop set
       </div>
     </div>
 
+    <!-- MODAL: MOVER EXERCÍCIO PARA OUTRO TREINO -->
+    <div class="modal-backdrop" id="modal-mover-exercicio">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Mover Exercício</h3>
+          <button class="btn btn-circle btn-close-modal" id="btn-fechar-mover">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="mover-info-box" style="margin-bottom: 16px;">
+            <p style="font-size: 0.9rem; color: var(--text-muted);">
+              Mover <strong id="mover-nome-exercicio" style="color: var(--text-main);"></strong> do treino <strong id="mover-treino-origem" style="color: var(--text-main);"></strong> para:
+            </p>
+          </div>
+          <div class="seletor-itens-grid" id="mover-destinos-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Destinos injetados por JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- NOTIFICAÇÃO/MODAL FLUTUANTE DE CRONÔMETRO DE DESCANSO -->
     <div class="timer-overlay" id="timer-rest-overlay">
       <div class="timer-card">

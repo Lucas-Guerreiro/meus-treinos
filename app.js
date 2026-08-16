@@ -219,6 +219,9 @@ function inicializarEventos() {
   // Ações do Timer de Descanso
   document.getElementById('btn-timer-add-15').addEventListener('click', () => adicionarTempoDescanso(15));
   document.getElementById('btn-timer-pular').addEventListener('click', pularDescanso);
+
+  // Ações do Modal Mover Exercício
+  document.getElementById('btn-fechar-mover').addEventListener('click', fecharModalMover);
 }
 
 // NAVEGAÇÃO DE TELAS (Single Page Application)
@@ -282,13 +285,25 @@ function renderizarDashboard() {
     const card = document.createElement('div');
     card.className = 'treino-card';
     
-    // Lista curta de nomes dos exercícios
-    const exTags = treino.exercicios.map(ex => `<span class="exercise-tag">${ex.nome} (${ex.grupo})</span>`).join('');
+    // Lista vertical detalhada de exercícios com ação de mover rápido
+    const exItems = treino.exercicios.map(ex => `
+      <div class="dashboard-exercise-item">
+        <span>${ex.nome} (${ex.grupo})</span>
+        <button class="btn-mover-ex-quick" onclick="abrirModalMoverExercicio('${treino.id}', '${ex.id}', '${ex.nome.replace(/'/g, "\\'")}')" title="Mover exercício para outro dia/treino">
+          <i data-lucide="arrow-right-left" style="width:12px;height:12px;"></i>
+        </button>
+      </div>
+    `).join('');
     
     card.innerHTML = `
       <div class="treino-card-header">
         <div class="treino-card-info">
-          <h4>${treino.nome}</h4>
+          <div class="treino-card-title-row">
+            <h4>${treino.nome}</h4>
+            <button class="btn-renomear-treino-quick" onclick="renomearTreinoRapido('${treino.id}')" title="Mudar dia / Renomear treino">
+              <i data-lucide="calendar-range" style="width:12px;height:12px;"></i>
+            </button>
+          </div>
           <p>${treino.descricao || 'Sem descrição'}</p>
         </div>
         <div class="treino-actions-top">
@@ -300,11 +315,11 @@ function renderizarDashboard() {
           </button>
         </div>
       </div>
-      <div class="treino-card-exercises">
-        ${exTags}
+      <div class="dashboard-exercise-list">
+        ${exItems || '<p class="empty-state-sm" style="padding:10px;margin:0;">Nenhum exercício neste treino.</p>'}
       </div>
       <div class="treino-card-actions">
-        <button class="btn btn-primary" onclick="iniciarTreino('${treino.id}')">
+        <button class="btn btn-primary" onclick="iniciarTreino('${treino.id}')" ${treino.exercicios.length === 0 ? 'disabled' : ''}>
           <i data-lucide="play" style="width:16px;height:16px;"></i> Iniciar Treino
         </button>
       </div>
@@ -1403,3 +1418,119 @@ function recuperarEstadoTreinoAtivo() {
     localStorage.removeItem('meus-treinos-estado-ativo');
   }
 }
+
+// --- LOGICA DE MOVIMENTAÇÃO DE EXERCÍCIOS E RENOMEAÇÃO DE DIAS ---
+
+let dadosMoverTemporarios = {
+  treinoOrigemId: null,
+  exercicioId: null
+};
+
+// ABRIR MODAL PARA MOVER EXERCÍCIO
+window.abrirModalMoverExercicio = function(treinoOrigemId, exercicioId, nomeEx) {
+  dadosMoverTemporarios.treinoOrigemId = treinoOrigemId;
+  dadosMoverTemporarios.exercicioId = exercicioId;
+
+  const treinoOrigem = state.treinos.find(t => t.id === treinoOrigemId);
+  if (!treinoOrigem) return;
+
+  document.getElementById('mover-nome-exercicio').innerText = nomeEx;
+  document.getElementById('mover-treino-origem').innerText = treinoOrigem.nome;
+
+  const destinosContainer = document.getElementById('mover-destinos-container');
+  destinosContainer.innerHTML = '';
+
+  // Lista os outros treinos disponíveis (destinos)
+  const outrosTreinos = state.treinos.filter(t => t.id !== treinoOrigemId);
+
+  if (outrosTreinos.length === 0) {
+    destinosContainer.innerHTML = `
+      <p class="empty-state-sm">Você precisa ter mais de um treino cadastrado para mover exercícios.</p>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fecharModalMover(); abrirCadastroTreino();">
+        Criar Novo Treino
+      </button>
+    `;
+  } else {
+    outrosTreinos.forEach(treinoDestino => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'seletor-item-btn';
+      btn.innerHTML = `
+        <span>Mover para <strong>${treinoDestino.nome}</strong></span>
+        <i data-lucide="chevron-right"></i>
+      `;
+      btn.onclick = () => moverExercicioConfirmado(treinoDestino.id);
+      destinosContainer.appendChild(btn);
+    });
+  }
+
+  document.getElementById('modal-mover-exercicio').style.display = 'flex';
+  lucide.createIcons();
+};
+
+// FECHAR MODAL DE MOVER
+window.fecharModalMover = function() {
+  document.getElementById('modal-mover-exercicio').style.display = 'none';
+  dadosMoverTemporarios = { treinoOrigemId: null, exercicioId: null };
+};
+
+// EXECUTAR A MOVIMENTAÇÃO DO EXERCÍCIO
+function moverExercicioConfirmado(treinoDestinoId) {
+  const { treinoOrigemId, exercicioId } = dadosMoverTemporarios;
+  if (!treinoOrigemId || !exercicioId || !treinoDestinoId) return;
+
+  const treinoOrigem = state.treinos.find(t => t.id === treinoOrigemId);
+  const treinoDestino = state.treinos.find(t => t.id === treinoDestinoId);
+
+  if (!treinoOrigem || !treinoDestino) return;
+
+  // Acha o index do exercício
+  const exIndex = treinoOrigem.exercicios.findIndex(ex => ex.id === exercicioId);
+  if (exIndex === -1) return;
+
+  // Remove do treino de origem
+  const [exercicioParaMover] = treinoOrigem.exercicios.splice(exIndex, 1);
+
+  // Adiciona ao treino de destino
+  treinoDestino.exercicios.push(exercicioParaMover);
+
+  // Se o treino de origem for o treino ativo que está rodando, cancela para evitar inconsistências no player
+  if (state.treinoAtivo && (state.treinoAtivo.id === treinoOrigemId || state.treinoAtivo.id === treinoDestinoId)) {
+    cancelarTreinoAtivoSilencioso();
+    alert('O treino ativo foi encerrado devido à modificação dos exercícios da rotina atual.');
+  }
+
+  salvarDados();
+  renderizarDashboard();
+  fecharModalMover();
+  
+  // Feedback visual rápido
+  alert(`Exercício "${exercicioParaMover.nome}" movido com sucesso para "${treinoDestino.nome}"! 🔄`);
+}
+
+// EDICAO RAPIDA DE DIA OU NOME DO TREINO
+window.renomearTreinoRapido = function(treinoId) {
+  const treino = state.treinos.find(t => t.id === treinoId);
+  if (!treino) return;
+
+  const novoNome = prompt('Alterar o dia ou nome do treino:', treino.nome);
+  if (novoNome === null) return; // Clicou em cancelar
+
+  const nomeLimpo = novoNome.trim();
+  if (!nomeLimpo) {
+    alert('O nome do treino não pode estar vazio.');
+    return;
+  }
+
+  treino.nome = nomeLimpo;
+
+  // Updates no treino ativo se for o mesmo
+  if (state.treinoAtivo && state.treinoAtivo.id === treinoId) {
+    state.treinoAtivo.nome = nomeLimpo;
+    document.getElementById('ativo-nome-treino').innerText = nomeLimpo;
+    salvarEstadoTreinoAtivo();
+  }
+
+  salvarDados();
+  renderizarDashboard();
+};
