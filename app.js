@@ -41,6 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Ativa Lucide Icons
   lucide.createIcons();
 
+  // Recupera o treino ativo se houver sessão recente (menos de 2 horas)
+  recuperarEstadoTreinoAtivo();
+
   // Registrar Service Worker para suporte PWA offline completo na academia
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
@@ -244,6 +247,9 @@ function showView(viewId) {
   
   // Renderiza ícones
   lucide.createIcons();
+
+  // Salva a aba em que o usuário está se ele tiver um treino ativo
+  salvarEstadoTreinoAtivo(viewId);
 }
 
 // RENDERIZAR O DASHBOARD PRINCIPAL
@@ -704,6 +710,7 @@ window.iniciarTreino = function(treinoId) {
 
   renderizarExercicioAtivo();
   showView('view-treino-ativo');
+  salvarEstadoTreinoAtivo('view-treino-ativo');
 };
 
 // RENDERIZAR O EXERCÍCIO ATIVO ATUAL
@@ -857,6 +864,8 @@ window.toggleSerie = function(serieIndex) {
   if (!estadoAtual && ex.descanso > 0) {
     iniciarTimerDescanso(ex.descanso);
   }
+
+  salvarEstadoTreinoAtivo();
 };
 
 // ATUALIZAR BARRA DE PROGRESSO DO TREINO
@@ -883,6 +892,7 @@ function proximoExercicio() {
   if (state.exercicioAtivoIndex < state.treinoAtivo.exercicios.length - 1) {
     state.exercicioAtivoIndex++;
     renderizarExercicioAtivo();
+    salvarEstadoTreinoAtivo();
   }
 }
 
@@ -891,6 +901,7 @@ function anteriorExercicio() {
   if (state.exercicioAtivoIndex > 0) {
     state.exercicioAtivoIndex--;
     renderizarExercicioAtivo();
+    salvarEstadoTreinoAtivo();
   }
 }
 
@@ -902,6 +913,7 @@ function confirmarSaidaTreino() {
   }
 }
 
+// CANCELA E LIMPA O ESTADO ATIVO DO CACHE
 function cancelarTreinoAtivoSilencioso() {
   state.treinoAtivo = null;
   pularDescanso();
@@ -910,6 +922,8 @@ function cancelarTreinoAtivoSilencioso() {
   const navBtnAtivo = document.getElementById('nav-btn-treino-ativo');
   navBtnAtivo.classList.add('disabled');
   navBtnAtivo.classList.remove('active');
+
+  salvarEstadoTreinoAtivo();
 }
 
 // FINALIZAR TREINO COM HISTÓRICO
@@ -1326,4 +1340,66 @@ function adivinharGrupoMuscular(nome) {
     return 'Core';
   }
   return 'Personalizado';
+}
+
+// --- PERSISTÊNCIA DO ESTADO DE TREINO ATIVO E ABAS ---
+
+// SALVAR ESTADO COMPLETO DO TREINO ATIVO
+function salvarEstadoTreinoAtivo(abaDesejada = null) {
+  if (!state.treinoAtivo) {
+    localStorage.removeItem('meus-treinos-estado-ativo');
+    return;
+  }
+
+  const estadoParaSalvar = {
+    treinoAtivo: state.treinoAtivo,
+    exercicioAtivoIndex: state.exercicioAtivoIndex,
+    seriesConcluidas: state.seriesConcluidas,
+    abaAtiva: abaDesejada || obterAbaAtiva(),
+    timestamp: Date.now()
+  };
+
+  localStorage.setItem('meus-treinos-estado-ativo', JSON.stringify(estadoParaSalvar));
+}
+
+// OBTER QUAL ABA ESTÁ ATUALMENTE VISÍVEL
+function obterAbaAtiva() {
+  const activeView = document.querySelector('.app-view.active');
+  return activeView ? activeView.id : 'view-dashboard';
+}
+
+// RECUPERAR ESTADO DE TREINO ATIVO DA SESSÃO ANTERIOR (SE TIVER MENOS DE 2 HORAS)
+function recuperarEstadoTreinoAtivo() {
+  const estadoSalvoRaw = localStorage.getItem('meus-treinos-estado-ativo');
+  if (!estadoSalvoRaw) return;
+
+  try {
+    const estado = JSON.parse(estadoSalvoRaw);
+    const duasHoras = 2 * 60 * 60 * 1000; // milissegundos
+
+    if (Date.now() - estado.timestamp < duasHoras) {
+      // Restaura o estado em memória
+      state.treinoAtivo = estado.treinoAtivo;
+      state.exercicioAtivoIndex = estado.exercicioAtivoIndex;
+      state.seriesConcluidas = estado.seriesConcluidas;
+
+      // Habilita a aba de treino ativo
+      const navBtnAtivo = document.getElementById('nav-btn-treino-ativo');
+      navBtnAtivo.classList.remove('disabled');
+
+      // Se estava na aba de treino ativo, renderiza o exercício
+      if (estado.abaAtiva === 'view-treino-ativo') {
+        renderizarExercicioAtivo();
+      }
+      
+      // Direciona para a aba correta
+      showView(estado.abaAtiva);
+    } else {
+      // Excedeu 2 horas, remove do storage
+      localStorage.removeItem('meus-treinos-estado-ativo');
+    }
+  } catch (e) {
+    console.error("Erro ao recuperar estado do treino ativo:", e);
+    localStorage.removeItem('meus-treinos-estado-ativo');
+  }
 }
