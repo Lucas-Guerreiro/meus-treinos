@@ -217,6 +217,7 @@ function inicializarEventos() {
   document.getElementById('btn-finalizar-treino').addEventListener('click', finalizarTreino);
 
   // Ações do Timer de Descanso
+  document.getElementById('btn-timer-sub-15').addEventListener('click', () => adicionarTempoDescanso(-15));
   document.getElementById('btn-timer-add-15').addEventListener('click', () => adicionarTempoDescanso(15));
   document.getElementById('btn-timer-pular').addEventListener('click', pularDescanso);
 
@@ -734,7 +735,29 @@ function renderizarExercicioAtivo() {
   
   document.getElementById('ativo-nome-exercicio').innerText = `${ex.nome} (${ex.grupo})`;
   document.getElementById('ativo-grupo-exercicio').innerText = ex.grupo;
-  document.getElementById('ativo-parametros-exercicio').innerHTML = `${ex.series} séries &bull; ${ex.repeticoes} reps &bull; ${ex.carga}kg &bull; Desc. ${ex.descanso}s`;
+  document.getElementById('ativo-parametros-exercicio').innerHTML = `
+    ${ex.series} séries &bull; ${ex.repeticoes} reps &bull; ${ex.carga}kg &bull; 
+    <span>Desc. <strong id="btn-editar-descanso-ativo" style="color:var(--warning); cursor:pointer; text-decoration:underline;" title="Clique para ajustar descanso">${ex.descanso}s</strong></span>
+  `;
+
+  // Permite ajustar o descanso diretamente no card do player
+  const btnEditarDescanso = document.getElementById('btn-editar-descanso-ativo');
+  if (btnEditarDescanso) {
+    btnEditarDescanso.onclick = () => {
+      const novoDescanso = prompt('Ajustar tempo de descanso (em segundos):', ex.descanso);
+      if (novoDescanso !== null) {
+        const segs = parseInt(novoDescanso);
+        if (!isNaN(segs) && segs >= 0) {
+          ex.descanso = segs;
+          salvarDados();
+          salvarEstadoTreinoAtivo();
+          renderizarExercicioAtivo();
+        } else {
+          alert('Por favor, insira um número válido maior ou igual a 0.');
+        }
+      }
+    };
+  }
 
   // Remove qualquer badge de técnica anterior se houver
   const badgeTecnicaAntigo = document.querySelector('.badge-tecnica');
@@ -1030,16 +1053,18 @@ function atualizarVisualTimer() {
   document.getElementById('timer-progress-bar').style.width = `${pct}%`;
 }
 
-// ADICIONAR +15 SEGUNDOS AO DESCANSO
+// ADICIONAR OU SUBTRAIR SEGUNDOS AO DESCANSO
 function adicionarTempoDescanso(segundos) {
-  // Se o timer já tiver concluído, reinicia com o tempo adicional
+  // Se o timer já tiver concluído, só reinicia com tempo positivo
   if (!state.timerInterval) {
-    iniciarTimerDescanso(segundos);
+    if (segundos > 0) {
+      iniciarTimerDescanso(segundos);
+    }
     return;
   }
   
-  state.timerSegundosTotais += segundos;
-  state.timerSegundosRestantes += segundos;
+  state.timerSegundosTotais = Math.max(5, state.timerSegundosTotais + segundos);
+  state.timerSegundosRestantes = Math.max(0, state.timerSegundosRestantes + segundos);
   atualizarVisualTimer();
 }
 
