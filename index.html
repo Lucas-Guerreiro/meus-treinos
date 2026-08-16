@@ -54,7 +54,10 @@
         <div class="section-header">
           <h3>Suas Rotinas</h3>
           <div class="dashboard-actions">
-            <button class="btn btn-secondary btn-sm" id="btn-importar-treino-view" title="Importar via Copia/Cola">
+            <button class="btn btn-secondary btn-sm" id="btn-nuvem-config-view" title="Configurar Nuvem (Sincronização)">
+              <i data-lucide="cloud" id="icon-cloud-status" style="width:14px;height:14px;"></i> Nuvem
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-importar-treino-view" title="Importar via Cópia/Cola">
               <i data-lucide="clipboard-paste" style="width:14px;height:14px;"></i> Importar
             </button>
             <button class="btn btn-primary btn-sm" id="btn-novo-treino-view">
@@ -392,6 +395,50 @@ Remada baixa - 3 - Drop set
       </div>
     </div>
 
+    <!-- MODAL: CONFIGURAÇÃO DE NUVEM (FIREBASE) -->
+    <div class="modal-backdrop" id="modal-nuvem-config">
+      <div class="modal-content" style="max-width: 420px;">
+        <div class="modal-header">
+          <h3>Sincronização na Nuvem</h3>
+          <button class="btn btn-circle btn-close-modal" id="btn-fechar-nuvem-config">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="status-nuvem-box" id="status-nuvem-box" style="padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 0.85rem; font-weight: 600; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <!-- Status será injetado por JS -->
+          </div>
+
+          <form id="form-nuvem-config" onsubmit="event.preventDefault();">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="nuvem-config-json">JSON de Configuração do Firebase</label>
+              <textarea id="nuvem-config-json" placeholder='Cole aqui o objeto firebaseConfig = { ... } do Console do Firebase...' rows="8" style="font-family: monospace; font-size: 0.75rem; color: var(--text-main); background-color: rgba(0,0,0,0.3); border: 1px solid var(--border-card); border-radius: var(--radius-sm); padding: 8px; width: 100%; outline: none; resize: vertical;" required></textarea>
+            </div>
+
+            <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 16px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--primary); padding: 8px; border-radius: 0 4px 4px 0;">
+              <strong>Como criar seu banco gratuito:</strong>
+              <ol style="margin-left: 14px; margin-top: 4px; display: flex; flex-direction: column; gap: 4px;">
+                <li>Acesse o <a href="https://console.firebase.google.com/" target="_blank" style="color:var(--primary); text-decoration: underline;">Firebase Console</a>.</li>
+                <li>Crie um projeto grátis (ex: "meus-treinos").</li>
+                <li>Adicione um app Web (&lt;/&gt;) e copie a constante <code>firebaseConfig</code>.</li>
+                <li>Ative o <strong>Firestore Database</strong> no modo de teste.</li>
+                <li>Cole as chaves da configuração JSON acima e clique em Conectar!</li>
+              </ol>
+            </div>
+
+            <div class="form-actions" style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-desconectar-nuvem" style="flex: 1; display: none; color: var(--danger); border-color: rgba(239, 68, 68, 0.2);">
+                <i data-lucide="cloud-off"></i> Desconectar
+              </button>
+              <button type="submit" class="btn btn-primary btn-sm" id="btn-conectar-nuvem" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i data-lucide="save"></i> Salvar e Conectar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <!-- NOTIFICAÇÃO/MODAL FLUTUANTE DE CRONÔMETRO DE DESCANSO -->
     <div class="timer-overlay" id="timer-rest-overlay">
       <div class="timer-card">
@@ -418,6 +465,10 @@ Remada baixa - 3 - Drop set
     </div>
 
   </div>
+
+  <!-- Firebase Compat CDNs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
   <!-- Scripts -->
   <script src="exercicios.js"></script>

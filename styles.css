@@ -1645,3 +1645,34 @@ textarea#import-text-input:focus {
   text-align: right;
   max-width: 48%;
 }
+
+/* CAIXA DE STATUS DE CONEXÃO DA NUVEM */
+.status-nuvem-box {
+  transition: all 0.3s ease;
+}
+
+.status-nuvem-box.desconectado {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.status-nuvem-box.conectado {
+  background-color: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.status-nuvem-box.conectado i {
+  animation: pulseGreen 2s infinite alternate;
+}
+
+@keyframes pulseGreen {
+  0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(74, 222, 128, 0.2)); }
+  100% { transform: scale(1.15); filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.6)); }
+}
+
+#icon-cloud-status.conectado {
+  color: #4ade80;
+  filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.5));
+}

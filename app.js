@@ -44,6 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Recupera o treino ativo se houver sessão recente (menos de 2 horas)
   recuperarEstadoTreinoAtivo();
 
+  // Inicializa a sincronização em nuvem do Firebase se estiver configurada
+  iniciarSincronizacaoNuvem();
+
   // Registrar Service Worker para suporte PWA offline completo na academia
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
@@ -65,10 +68,36 @@ function carregarDados() {
   }
 }
 
-// SALVAR DADOS NO LOCALSTORAGE
+// SALVAR DADOS NO LOCALSTORAGE E SINCRONIZAR NA NUVEM
 function salvarDados() {
   localStorage.setItem('meus-treinos-data', JSON.stringify(state.treinos));
   localStorage.setItem('meus-treinos-historico', JSON.stringify(state.historico));
+
+  // Sincroniza em nuvem no Firestore se o Firebase estiver inicializado
+  if (dbFirebase) {
+    const userUuid = localStorage.getItem('meus-treinos-user-uuid');
+    if (!userUuid) return;
+
+    try {
+      const batch = dbFirebase.batch();
+      
+      // Sincroniza treinos com índice de ordenação
+      state.treinos.forEach((treino, idx) => {
+        const docRef = dbFirebase.collection('usuarios').doc(userUuid).collection('treinos').doc(treino.id);
+        batch.set(docRef, { ...treino, ordem: idx });
+      });
+
+      // Sincroniza histórico
+      state.historico.forEach(reg => {
+        const docRef = dbFirebase.collection('usuarios').doc(userUuid).collection('historico').doc(reg.id);
+        batch.set(docRef, reg);
+      });
+
+      batch.commit().catch(err => console.error("Erro no batch commit do Firebase:", err));
+    } catch (e) {
+      console.error("Falha ao preparar batch de sincronização do Firebase:", e);
+    }
+  }
 }
 
 // CRIAR TREINOS PADRÃO (PRIMEIRA EXECUÇÃO)
@@ -227,6 +256,12 @@ function inicializarEventos() {
   // Ações do Modal Selecionar Dia
   document.getElementById('btn-cadastro-escolher-dia').addEventListener('click', () => abrirModalSelecionarDia('cadastro'));
   document.getElementById('btn-fechar-selecionar-dia').addEventListener('click', fecharModalSelecionarDia);
+
+  // Ações de Nuvem/Firebase Sincronização
+  document.getElementById('btn-nuvem-config-view').addEventListener('click', abrirModalNuvemConfig);
+  document.getElementById('btn-fechar-nuvem-config').addEventListener('click', fecharModalNuvemConfig);
+  document.getElementById('form-nuvem-config').addEventListener('submit', conectarNuvemFirebase);
+  document.getElementById('btn-desconectar-nuvem').addEventListener('click', desconectarNuvemFirebase);
 }
 
 // NAVEGAÇÃO DE TELAS (Single Page Application)
@@ -531,6 +566,13 @@ function removerExCadastro(index) {
 // EXCLUIR TREINO DEFINITIVAMENTE
 window.deletarTreino = function(treinoId) {
   if (confirm('Tem certeza que deseja excluir esta rotina de treino?')) {
+    // Se o Firebase estiver ativo, deleta o documento correspondente na nuvem
+    if (dbFirebase) {
+      const userUuid = localStorage.getItem('meus-treinos-user-uuid');
+      dbFirebase.collection('usuarios').doc(userUuid).collection('treinos').doc(treinoId).delete()
+        .catch(err => console.error("Erro ao deletar treino da nuvem:", err));
+    }
+
     state.treinos = state.treinos.filter(t => t.id !== treinoId);
     
     // Se o treino deletado for o ativo, cancela o treino ativo
@@ -1759,3 +1801,265 @@ window.reordenarTreino = function(treinoId, direcao) {
   salvarDados();
   renderizarDashboard();
 };
+
+// --- LOGICA DE BANCO DE DADOS EM NUVEM (FIREBASE FIRESTORE) ---
+
+let dbFirebase = null;
+let unsubscribesFirebase = [];
+
+// INICIALIZAR SDK DO FIREBASE
+function inicializarFirebase(config) {
+  if (typeof firebase === 'undefined') {
+    console.error("Firebase SDK não está carregado. Verifique a conexão com a CDN.");
+    return false;
+  }
+  
+  try {
+    let app;
+    if (!firebase.apps.length) {
+      app = firebase.initializeApp(config);
+    } else {
+      app = firebase.app();
+    }
+    
+    dbFirebase = firebase.firestore(app);
+    
+    // Habilita persistência offline (suporte offline nativo do Firestore no PWA)
+    dbFirebase.enablePersistence().catch(err => {
+      if (err.code === 'failed-precondition') {
+        console.warn("Firestore: Persistência falhou (múltiplas abas abertas).");
+      } else if (err.code === 'unimplemented') {
+        console.warn("Firestore: O navegador não suporta persistência offline.");
+      }
+    });
+    
+    return true;
+  } catch (err) {
+    console.error("Erro ao inicializar Firebase:", err);
+    return false;
+  }
+}
+
+// INICIAR CONEXÃO E SINCRONIZAÇÃO EM NUVEM
+function iniciarSincronizacaoNuvem() {
+  const configRaw = localStorage.getItem('meus-treinos-firebase-config');
+  if (!configRaw) {
+    atualizarUIStatusNuvem(false);
+    return;
+  }
+
+  try {
+    const config = JSON.parse(configRaw);
+    const sucesso = inicializarFirebase(config);
+    if (!sucesso) {
+      atualizarUIStatusNuvem(false);
+      return;
+    }
+
+    atualizarUIStatusNuvem(true);
+
+    // Cancela escutas anteriores se houver
+    unsubscribesFirebase.forEach(unsub => unsub());
+    unsubscribesFirebase = [];
+
+    // UUID exclusivo do usuário para isolamento de dados
+    let userUuid = localStorage.getItem('meus-treinos-user-uuid');
+    if (!userUuid) {
+      userUuid = 'user-' + Date.now() + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('meus-treinos-user-uuid', userUuid);
+    }
+
+    // Escuta em tempo real para sincronização da coleção de Treinos
+    const unsubTreinos = dbFirebase.collection('usuarios').doc(userUuid).collection('treinos')
+      .onSnapshot(snapshot => {
+        const treinosNovos = [];
+        snapshot.forEach(doc => {
+          treinosNovos.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // Sincroniza se vierem dados válidos do Firestore
+        if (treinosNovos.length > 0 || snapshot.metadata.fromCache) {
+          state.treinos = treinosNovos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+          localStorage.setItem('meus-treinos-data', JSON.stringify(state.treinos));
+          renderizarDashboard();
+        }
+      }, err => {
+        console.error("Firestore erro ao ler treinos:", err);
+      });
+
+    // Escuta em tempo real para sincronização da coleção de Histórico
+    const unsubHistorico = dbFirebase.collection('usuarios').doc(userUuid).collection('historico')
+      .onSnapshot(snapshot => {
+        const historicoNovo = [];
+        snapshot.forEach(doc => {
+          historicoNovo.push({ id: doc.id, ...doc.data() });
+        });
+        
+        if (historicoNovo.length > 0 || snapshot.metadata.fromCache) {
+          state.historico = historicoNovo.sort((a, b) => new Date(a.dataConclusao) - new Date(b.dataConclusao));
+          localStorage.setItem('meus-treinos-historico', JSON.stringify(state.historico));
+          renderizarDashboard();
+        }
+      }, err => {
+        console.error("Firestore erro ao ler historico:", err);
+      });
+
+    unsubscribesFirebase.push(unsubTreinos, unsubHistorico);
+
+  } catch (e) {
+    console.error("Erro na rotina de sincronização em nuvem:", e);
+    atualizarUIStatusNuvem(false);
+  }
+}
+
+// ATUALIZAR STATUS VISUAL DO BOTÃO DE NUVEM
+function atualizarUIStatusNuvem(conectado) {
+  const btnNuvem = document.getElementById('btn-nuvem-config-view');
+  const iconCloud = document.getElementById('icon-cloud-status');
+  const statusBox = document.getElementById('status-nuvem-box');
+  const btnDesconectar = document.getElementById('btn-desconectar-nuvem');
+
+  if (conectado) {
+    iconCloud.classList.add('conectado');
+    if (statusBox) {
+      statusBox.className = 'status-nuvem-box conectado';
+      statusBox.innerHTML = `
+        <i data-lucide="cloud-lightning" style="width: 16px; height: 16px;"></i>
+        <span>Sincronização em Nuvem Ativa</span>
+      `;
+    }
+    if (btnDesconectar) btnDesconectar.style.display = 'block';
+  } else {
+    iconCloud.classList.remove('conectado');
+    if (statusBox) {
+      statusBox.className = 'status-nuvem-box desconectado';
+      statusBox.innerHTML = `
+        <i data-lucide="cloud-off" style="width: 16px; height: 16px;"></i>
+        <span>Salvando Localmente (Sem Nuvem)</span>
+      `;
+    }
+    if (btnDesconectar) btnDesconectar.style.display = 'none';
+  }
+  lucide.createIcons();
+}
+
+// ABRIR CONFIGURAÇÃO DE NUVEM
+window.abrirModalNuvemConfig = function() {
+  const configRaw = localStorage.getItem('meus-treinos-firebase-config');
+  const txtArea = document.getElementById('nuvem-config-json');
+  
+  if (configRaw) {
+    txtArea.value = JSON.stringify(JSON.parse(configRaw), null, 2);
+    atualizarUIStatusNuvem(true);
+  } else {
+    txtArea.value = '';
+    atualizarUIStatusNuvem(false);
+  }
+
+  document.getElementById('modal-nuvem-config').style.display = 'flex';
+  lucide.createIcons();
+};
+
+// FECHAR CONFIGURAÇÃO DE NUVEM
+window.fecharModalNuvemConfig = function() {
+  document.getElementById('modal-nuvem-config').style.display = 'none';
+};
+
+// CONECTAR AO FIREBASE E SALVAR CONFIGURAÇÃO
+window.conectarNuvemFirebase = async function() {
+  const txtArea = document.getElementById('nuvem-config-json');
+  const valor = txtArea.value.trim();
+
+  if (!valor) {
+    alert("Por favor, insira o código JSON de configuração do seu Firebase.");
+    return;
+  }
+
+  try {
+    let configObj = null;
+    
+    if (valor.includes('{') && valor.includes('}')) {
+      const extrairJson = valor.substring(valor.indexOf('{'), valor.lastIndexOf('}') + 1);
+      const jsonLimpo = extrairJson
+        .replace(/([a-zA-Z0-9]+):/g, '"$1":') 
+        .replace(/'/g, '"') 
+        .replace(/,\s*}/g, '}') 
+        .replace(/\/\/.*$/gm, ''); 
+      
+      configObj = JSON.parse(jsonLimpo);
+    } else {
+      configObj = JSON.parse(valor);
+    }
+
+    if (!configObj.apiKey || !configObj.projectId) {
+      throw new Error("Chaves apiKey ou projectId ausentes na configuração.");
+    }
+
+    // Tenta inicializar
+    const sucesso = inicializarFirebase(configObj);
+    if (sucesso) {
+      localStorage.setItem('meus-treinos-firebase-config', JSON.stringify(configObj));
+      
+      // Força a migração dos dados que já existiam localmente para a nuvem
+      alert("Configuração válida! Iniciando migração dos dados locais para a nuvem...");
+      await migrarDadosLocaisParaNuvem();
+      
+      // Inicia escutas ativas
+      iniciarSincronizacaoNuvem();
+      alert("Conectado à nuvem Firebase com sucesso! Seus treinos agora sincronizam automaticamente. 🎉");
+      fecharModalNuvemConfig();
+    } else {
+      alert("Não foi possível inicializar o Firebase. Verifique se o JSON colado está completo e correto.");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Formato de configuração inválido. Cole exatamente o objeto 'firebaseConfig' gerado pelo painel do Firebase.");
+  }
+};
+
+// DESCONECTAR E VOLTAR AO MODO LOCAL
+window.desconectarNuvemFirebase = function() {
+  if (confirm("Deseja realmente desconectar da nuvem? O aplicativo voltará a salvar apenas na memória local deste aparelho.")) {
+    // Para todas as escutas
+    unsubscribesFirebase.forEach(unsub => unsub());
+    unsubscribesFirebase = [];
+    
+    dbFirebase = null;
+    localStorage.removeItem('meus-treinos-firebase-config');
+    
+    // Atualiza interface
+    atualizarUIStatusNuvem(false);
+    renderizarDashboard();
+    
+    alert("Desconectado da nuvem com sucesso!");
+    fecharModalNuvemConfig();
+  }
+};
+
+// MIGRAR DADOS DO LOCALSTORAGE PARA O FIREBASE FIRESTORE
+async function migrarDadosLocaisParaNuvem() {
+  if (!dbFirebase) return;
+  const userUuid = localStorage.getItem('meus-treinos-user-uuid');
+  if (!userUuid) return;
+
+  try {
+    const batch = dbFirebase.batch();
+
+    // Migra treinos
+    state.treinos.forEach((treino, idx) => {
+      const docRef = dbFirebase.collection('usuarios').doc(userUuid).collection('treinos').doc(treino.id);
+      batch.set(docRef, { ...treino, ordem: idx });
+    });
+
+    // Migra histórico
+    state.historico.forEach(reg => {
+      const docRef = dbFirebase.collection('usuarios').doc(userUuid).collection('historico').doc(reg.id);
+      batch.set(docRef, reg);
+    });
+
+    await batch.commit();
+    console.log("Migração de dados locais concluída com sucesso no Firestore.");
+  } catch (e) {
+    console.error("Falha ao migrar dados locais para a nuvem:", e);
+  }
+}
