@@ -114,7 +114,7 @@
         <div class="exercicios-lista" id="exercicios-lista-container"></div>
       </section>
 
-      <!-- VIEW: IMPORTAR TREINO (COPIA E COLA) -->
+      <!-- VIEW: IMPORTAR TREINO (COPIA E COLA / PDF) -->
       <section id="view-importar-treino" class="app-view">
         <div class="view-header">
           <button class="btn btn-text" id="btn-cancelar-importacao">
@@ -125,6 +125,16 @@
 
         <div class="import-instructions">
           <p>Cole o texto do seu treino copiado de planilhas, WhatsApp ou PDF. O app criará automaticamente um treino para cada dia ou bloco detectado!</p>
+          
+          <div class="pdf-import-box" style="margin-top: 12px; padding: 12px; background: rgba(29, 158, 117, 0.05); border: 1px dashed var(--primary); border-radius: var(--radius-sm); text-align: center; margin-bottom: 12px;">
+            <p style="margin-bottom: 8px; font-size: 0.85rem; color: var(--text-main); font-weight: bold;">Ou importe diretamente seu arquivo PDF:</p>
+            <input type="file" id="import-pdf-input" accept=".pdf" style="display: none;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-carregar-pdf" onclick="document.getElementById('import-pdf-input').click()" style="display: inline-flex; align-items: center; gap: 6px; margin: 0 auto; padding: 6px 12px; font-size: 0.8rem;">
+              <i data-lucide="file-text"></i> Selecionar PDF do Treino
+            </button>
+            <div id="pdf-status-message" style="margin-top: 6px; font-size: 0.75rem; color: var(--text-muted);">Nenhum arquivo PDF selecionado.</div>
+          </div>
+
           <div class="tip-box">
             <h5>💡 Dica de Formato:</h5>
             <p>Você pode colar tabelas inteiras (como a da imagem) ou texto simples como:</p>
@@ -469,6 +479,9 @@ Remada baixa - 3 - Drop set
   <!-- Firebase Compat CDNs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
   <!-- Scripts -->
   <script src="exercicios.js"></script>

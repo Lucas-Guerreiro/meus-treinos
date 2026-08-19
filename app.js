@@ -214,6 +214,7 @@ function inicializarEventos() {
   document.getElementById('btn-cancelar-importacao').addEventListener('click', () => showView('view-dashboard'));
   document.getElementById('btn-cancelar-importacao-alt').addEventListener('click', () => showView('view-dashboard'));
   document.getElementById('form-importar').addEventListener('submit', processarImportacaoTexto);
+  document.getElementById('import-pdf-input').addEventListener('change', processarUploadPDF);
 
   // Ações do Cadastro de Treino
   document.getElementById('btn-cancelar-cadastro').addEventListener('click', () => showView('view-dashboard'));
@@ -1370,6 +1371,82 @@ function processarImportacaoTexto(e) {
   alert(`${treinosImportados.length} treino(s) criado(s) e adicionado(s) com sucesso! 🎉`);
   
   showView('view-dashboard');
+}
+
+// PROCESSAR UPLOAD DE ARQUIVO PDF E EXTRAIR TEXTO
+async function processarUploadPDF(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const statusMsg = document.getElementById('pdf-status-message');
+  const txtArea = document.getElementById('import-text-input');
+
+  statusMsg.innerText = "Lendo arquivo PDF... 📄";
+  statusMsg.style.color = "var(--primary)";
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // Configura a URL do worker do PDF.js
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    } else {
+      throw new Error("Biblioteca PDF.js não carregada.");
+    }
+
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = "";
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      
+      const items = textContent.items;
+      if (!items || items.length === 0) continue;
+      
+      // Agrupar itens por coordenada Y (linha) com tolerância de 6px
+      const rows = [];
+      items.forEach(item => {
+        const y = item.transform[5];
+        const x = item.transform[4];
+        const text = item.str;
+        
+        let foundRow = rows.find(r => Math.abs(r.y - y) < 6);
+        if (foundRow) {
+          foundRow.items.push({ x, text });
+        } else {
+          rows.push({ y, items: [{ x, text }] });
+        }
+      });
+      
+      // Ordena linhas de cima para baixo (Y decrescente)
+      rows.sort((a, b) => b.y - a.y);
+      
+      // Ordena palavras da esquerda para a direita (X crescente) e junta com espaço
+      const pageLines = rows.map(r => {
+        r.items.sort((a, b) => a.x - b.x);
+        return r.items.map(i => i.text).join(' ');
+      });
+      
+      fullText += pageLines.join('\n') + "\n\n";
+    }
+
+    if (fullText.trim()) {
+      txtArea.value = fullText.trim();
+      statusMsg.innerText = `Sucesso: PDF carregado (${pdf.numPages} pág.)! Revise o texto abaixo.`;
+      statusMsg.style.color = "var(--primary)";
+    } else {
+      statusMsg.innerText = "Erro: Não foi possível extrair nenhum texto deste PDF.";
+      statusMsg.style.color = "var(--danger)";
+    }
+  } catch (err) {
+    console.error("Erro ao ler PDF:", err);
+    statusMsg.innerText = "Falha ao ler PDF. Verifique se o arquivo não está protegido.";
+    statusMsg.style.color = "var(--danger)";
+  }
+
+  // Limpa o input para permitir selecionar o mesmo arquivo novamente
+  e.target.value = '';
 }
 
 // BUSCA APROXIMADA NA BIBLIOTECA
