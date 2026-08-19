@@ -1266,21 +1266,31 @@ function processarImportacaoTexto(e) {
       };
     }
 
-    // 2. Parser do Exercício na linha
+       // 2. Parser do Exercício na linha
     let nomeEx = '';
     let seriesEx = 3; // Padrão
     let repsEx = '10 a 12'; // Padrão
     let tecnicaEx = '';
 
+    // Normaliza os diferentes tipos de traços (meia-risca, travessão, hífen) para um hífen simples
+    const linhaNormalizada = linha.replace(/[—–]/g, '-');
+
     // Verifica se há separadores como Tabulação, Barra Vertical ou Ponto e Vírgula
-    const partesTab = linha.split(/\t|\||;/);
+    const partesTab = linhaNormalizada.split(/\t|\||;/);
     if (partesTab.length >= 2) {
       nomeEx = partesTab[0].trim();
       
-      // Tenta extrair séries da segunda parte
-      const seriesMatch = partesTab[1].match(/(\d+)/);
-      if (seriesMatch) {
-        seriesEx = parseInt(seriesMatch[1]);
+      // Tenta extrair o padrão "2x12-15" ou "2×12-15" na segunda parte
+      const padraoReps = partesTab[1].match(/(\d+)\s*[xX×]\s*([a-zA-Z0-9\-\s\/\+s]+)/);
+      if (padraoReps) {
+        seriesEx = parseInt(padraoReps[1]);
+        repsEx = padraoReps[2].trim();
+      } else {
+        // Fallback de tentar ler apenas número de séries
+        const seriesMatch = partesTab[1].match(/(\d+)/);
+        if (seriesMatch) {
+          seriesEx = parseInt(seriesMatch[1]);
+        }
       }
       
       // Se houver uma terceira parte, extrai como técnica
@@ -1289,28 +1299,46 @@ function processarImportacaoTexto(e) {
       }
     } else {
       // Se não há separador formal, tenta quebrar por traços ou hífens
-      const partesHifen = linha.split('-');
+      const partesHifen = linhaNormalizada.split('-');
       if (partesHifen.length >= 2) {
         nomeEx = partesHifen[0].trim();
-        const seriesMatch = partesHifen[1].match(/(\d+)/);
-        if (seriesMatch) {
-          seriesEx = parseInt(seriesMatch[1]);
+        
+        // Tenta extrair o padrão "2x12-15" ou "2×12-15" na segunda parte
+        const padraoReps = partesHifen[1].match(/(\d+)\s*[xX×]\s*([a-zA-Z0-9\-\s\/\+s]+)/);
+        if (padraoReps) {
+          seriesEx = parseInt(padraoReps[1]);
+          repsEx = padraoReps[2].trim();
+        } else {
+          const seriesMatch = partesHifen[1].match(/(\d+)/);
+          if (seriesMatch) {
+            seriesEx = parseInt(seriesMatch[1]);
+          }
         }
+        
         if (partesHifen.length >= 3) {
           tecnicaEx = partesHifen[2].trim();
         }
       } else {
-        // Formato sem pontuação (Ex: "Supino reto 4 séries Drop set")
-        // Regex para capturar: Nome (texto), Séries (dígito), Técnica (resto)
-        const regexLivre = /^(.*?)\s+(\d+)\s*(?:x|series|séries|sets)?\s*(.*)$/i;
-        const matchLivre = linha.match(regexLivre);
-        if (matchLivre) {
-          nomeEx = matchLivre[1].trim();
-          seriesEx = parseInt(matchLivre[2]);
-          tecnicaEx = matchLivre[3].trim();
+        // Formato sem pontuação (Ex: "Supino reto 4x10" ou "Supino reto 4 séries Drop set")
+        // Tenta achar o padrão "4x10" ou "4x12-15" no final da linha
+        const regexFimX = /^(.*?)\s+(\d+)\s*[xX×]\s*([a-zA-Z0-9\-\s\/\+s]+)$/i;
+        const matchFimX = linhaNormalizada.match(regexFimX);
+        if (matchFimX) {
+          nomeEx = matchFimX[1].trim();
+          seriesEx = parseInt(matchFimX[2]);
+          repsEx = matchFimX[3].trim();
         } else {
-          // Se falhar, assume a linha inteira como nome do exercício
-          nomeEx = linha;
+          // Regex para capturar: Nome (texto), Séries (dígito), Técnica (resto)
+          const regexLivre = /^(.*?)\s+(\d+)\s*(?:x|series|séries|sets)?\s*(.*)$/i;
+          const matchLivre = linhaNormalizada.match(regexLivre);
+          if (matchLivre) {
+            nomeEx = matchLivre[1].trim();
+            seriesEx = parseInt(matchLivre[2]);
+            tecnicaEx = matchLivre[3].trim();
+          } else {
+            // Se falhar, assume a linha inteira como nome do exercício
+            nomeEx = linhaNormalizada;
+          }
         }
       }
     }
