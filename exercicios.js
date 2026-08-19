@@ -161,6 +161,22 @@ const EXERCICIOS_PADRAO = [
     dicas: "Pressione o quadril firmemente contra o estofado durante todo o movimento para evitar compensações da lombar.",
     erros: "Tirar o quadril/pélvis do banco ao dobrar os joelhos ou fazer movimentos curtos."
   },
+  {
+    id: "levantamento_terra_romeno",
+    nome: "Levantamento Terra Romeno",
+    grupo: "Pernas",
+    imagem: "assets/levantamento_terra_romeno.png",
+    videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+levantamento+terra+romeno",
+    passos: [
+      "Fique em pé com os pés na largura dos quadris, segurando a barra à frente das coxas.",
+      "Mantenha a coluna neutra, os ombros para trás e o abdômen contraído.",
+      "Inicie o movimento empurrando o quadril para trás e flexionando levemente os joelhos.",
+      "Desça a barra rente às pernas até sentir um alongamento nos posteriores de coxa (isquiotibiais).",
+      "Retorne à posição inicial contraindo os glúteos e empurrando o quadril para a frente."
+    ],
+    dicas: "Mantenha a barra o mais próxima possível do seu corpo durante todo o trajeto para proteger a lombar.",
+    erros: "Arredondar a coluna vertebral na descida ou flexionar demais os joelhos (transformando o movimento em um agachamento)."
+  },
 
   // OMBROS
   {

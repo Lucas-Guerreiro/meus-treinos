@@ -62,6 +62,23 @@ function carregarDados() {
   
   if (treinosSalvos) {
     state.treinos = JSON.parse(treinosSalvos);
+    
+    // Migração de exercícios personalizados para o banco padrão
+    let alterado = false;
+    state.treinos.forEach(treino => {
+      treino.exercicios.forEach(ex => {
+        if (ex.id.startsWith('custom-') && ex.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === 'levantamento terra romeno') {
+          ex.id = 'levantamento_terra_romeno';
+          ex.nome = 'Levantamento Terra Romeno';
+          ex.grupo = 'Pernas';
+          alterado = true;
+        }
+      });
+    });
+    if (alterado) {
+      // Salva local e na nuvem
+      setTimeout(() => salvarDados(), 500);
+    }
   }
   if (historicoSalvo) {
     state.historico = JSON.parse(historicoSalvo);
