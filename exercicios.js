@@ -20,7 +20,7 @@ const EXERCICIOS_PADRAO = [
     id: "supino_inclinado_halteres",
     nome: "Supino Inclinado com Halteres",
     grupo: "Peito",
-    imagem: null,
+    imagem: "assets/supino_inclinado.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+supino+inclinado+halteres",
     passos: [
       "Ajuste o banco para uma inclinação entre 30° e 45°.",
@@ -53,7 +53,7 @@ const EXERCICIOS_PADRAO = [
     id: "puxada_frente",
     nome: "Puxada Aberta na Polia",
     grupo: "Costas",
-    imagem: null,
+    imagem: "assets/puxada_frente.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+puxada+frente+polia",
     passos: [
       "Ajuste o suporte de pernas para ficar firme. Segure a barra com uma pegada pronada bem aberta.",
@@ -167,7 +167,7 @@ const EXERCICIOS_PADRAO = [
     id: "desenvolvimento_halteres",
     nome: "Desenvolvimento com Halteres",
     grupo: "Ombros",
-    imagem: null,
+    imagem: "assets/desenvolvimento_halteres.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+desenvolvimento+halteres",
     passos: [
       "Sente-se em um banco com encosto reto ou levemente inclinado. Apoie bem a coluna.",
@@ -216,7 +216,7 @@ const EXERCICIOS_PADRAO = [
     id: "tricep_pulley",
     nome: "Tríceps na Polia (Corda ou Barra)",
     grupo: "Braços",
-    imagem: null,
+    imagem: "assets/triceps_polia.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+triceps+corda+polia",
     passos: [
       "Fique de frente para a polia alta. Segure a corda com pegada neutra (palmas viradas uma para a outra).",

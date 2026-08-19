@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meus-treinos-cache-v6';
+const CACHE_NAME = 'meus-treinos-cache-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,11 @@ const ASSETS = [
   './assets/supino_reto.jpg',
   './assets/agachamento_livre.jpg',
   './assets/rosca_direta.jpg',
-  './assets/elevacao_lateral.jpg'
+  './assets/elevacao_lateral.jpg',
+  './assets/supino_inclinado.jpg',
+  './assets/puxada_frente.jpg',
+  './assets/desenvolvimento_halteres.jpg',
+  './assets/triceps_polia.jpg'
 ];
 
 // Instalação do Service Worker e caching de recursos essenciais
