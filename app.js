@@ -1840,16 +1840,36 @@ function inicializarFirebase(config) {
   }
 }
 
+// CONFIGURAÇÃO PADRÃO DO FIREBASE (FORNECIDA PELO USUÁRIO)
+const FIREBASE_CONFIG_PADRAO = {
+  apiKey: "AIzaSyANtV5wO1q_Ms-IoW01Un3lqSmfd0JMgRc",
+  authDomain: "meus-treinos-7c285.firebaseapp.com",
+  projectId: "meus-treinos-7c285",
+  storageBucket: "meus-treinos-7c285.firebasestorage.app",
+  messagingSenderId: "103228129670",
+  appId: "1:103228129670:web:52f52f0203ae2a9bb0ac07"
+};
+
 // INICIAR CONEXÃO E SINCRONIZAÇÃO EM NUVEM
-function iniciarSincronizacaoNuvem() {
-  const configRaw = localStorage.getItem('meus-treinos-firebase-config');
+async function iniciarSincronizacaoNuvem() {
+  let configRaw = localStorage.getItem('meus-treinos-firebase-config');
+  let config;
+  let primeiraInicializacao = false;
+
   if (!configRaw) {
-    atualizarUIStatusNuvem(false);
-    return;
+    // Inicializa com a configuração padrão fornecida pelo usuário
+    config = FIREBASE_CONFIG_PADRAO;
+    localStorage.setItem('meus-treinos-firebase-config', JSON.stringify(config));
+    primeiraInicializacao = true;
+  } else {
+    try {
+      config = JSON.parse(configRaw);
+    } catch (e) {
+      config = FIREBASE_CONFIG_PADRAO;
+    }
   }
 
   try {
-    const config = JSON.parse(configRaw);
     const sucesso = inicializarFirebase(config);
     if (!sucesso) {
       atualizarUIStatusNuvem(false);
@@ -1857,6 +1877,17 @@ function iniciarSincronizacaoNuvem() {
     }
 
     atualizarUIStatusNuvem(true);
+
+    // Se for a primeira inicialização com a nova chave, migra os dados locais para a nuvem
+    if (primeiraInicializacao) {
+      // UUID exclusivo do usuário para isolamento de dados
+      let userUuid = localStorage.getItem('meus-treinos-user-uuid');
+      if (!userUuid) {
+        userUuid = 'user-' + Date.now() + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('meus-treinos-user-uuid', userUuid);
+      }
+      await migrarDadosLocaisParaNuvem();
+    }
 
     // Cancela escutas anteriores se houver
     unsubscribesFirebase.forEach(unsub => unsub());
@@ -1952,7 +1983,7 @@ window.abrirModalNuvemConfig = function() {
     txtArea.value = JSON.stringify(JSON.parse(configRaw), null, 2);
     atualizarUIStatusNuvem(true);
   } else {
-    txtArea.value = '';
+    txtArea.value = JSON.stringify(FIREBASE_CONFIG_PADRAO, null, 2);
     atualizarUIStatusNuvem(false);
   }
 
