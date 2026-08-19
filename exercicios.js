@@ -36,7 +36,7 @@ const EXERCICIOS_PADRAO = [
     id: "crucifixo_maquina",
     nome: "Pec Deck / Crucifixo Máquina",
     grupo: "Peito",
-    imagem: null,
+    imagem: "assets/crucifixo_maquina.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+crucifixo+maquina+pec+deck",
     passos: [
       "Ajuste a altura do banco para que as alças fiquem alinhadas com a parte média do seu peito.",
@@ -69,7 +69,7 @@ const EXERCICIOS_PADRAO = [
     id: "remada_curvada",
     nome: "Remada Curvada com Barra",
     grupo: "Costas",
-    imagem: null,
+    imagem: "assets/remada_curvada.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+remada+curvada+barra",
     passos: [
       "Fique em pé com os pés na largura dos ombros. Segure a barra com pegada pronada.",
@@ -85,7 +85,7 @@ const EXERCICIOS_PADRAO = [
     id: "remada_baixa",
     nome: "Remada Baixa Sentada (Triângulo)",
     grupo: "Costas",
-    imagem: null,
+    imagem: "assets/remada_baixa.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+remada+baixa+sentada+triangulo",
     passos: [
       "Sente-se no aparelho, apoie os pés nas plataformas com os joelhos levemente flexionados.",
@@ -119,7 +119,7 @@ const EXERCICIOS_PADRAO = [
     id: "leg_press_45",
     nome: "Leg Press 45°",
     grupo: "Pernas",
-    imagem: null,
+    imagem: "assets/leg_press.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+leg+press+45",
     passos: [
       "Sente-se no aparelho e apoie as costas e a cabeça completamente no encosto.",
@@ -135,7 +135,7 @@ const EXERCICIOS_PADRAO = [
     id: "cadeira_extensora",
     nome: "Cadeira Extensora",
     grupo: "Pernas",
-    imagem: null,
+    imagem: "assets/cadeira_extensora.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+cadeira+extensora",
     passos: [
       "Ajuste o encosto para que a dobra do seu joelho fique exatamente no limite do assento.",
@@ -150,7 +150,7 @@ const EXERCICIOS_PADRAO = [
     id: "mesa_flexora",
     nome: "Mesa Flexora",
     grupo: "Pernas",
-    imagem: null,
+    imagem: "assets/mesa_flexora.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+mesa+flexora",
     passos: [
       "Deite-se de bruços na mesa, alinhando a articulação do joelho com o eixo de rotação da máquina.",
@@ -234,7 +234,7 @@ const EXERCICIOS_PADRAO = [
     id: "abdominal_infra",
     nome: "Abdominal Infra no Chão",
     grupo: "Core",
-    imagem: null,
+    imagem: "assets/abdominal_infra.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+abdominal+infra+chao",
     passos: [
       "Deite-se de costas em um colchonete, com as mãos sob o quadril para apoiar a lombar ou estendidas ao lado.",
