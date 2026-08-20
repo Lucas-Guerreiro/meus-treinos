@@ -1930,7 +1930,7 @@ let dbFirebase = null;
 let unsubscribesFirebase = [];
 
 // INICIALIZAR SDK DO FIREBASE
-function inicializarFirebase(config) {
+async function inicializarFirebase(config) {
   if (typeof firebase === 'undefined') {
     console.error("Firebase SDK não está carregado. Verifique a conexão com a CDN.");
     return false;
@@ -1938,22 +1938,27 @@ function inicializarFirebase(config) {
   
   try {
     let app;
-    if (!firebase.apps.length) {
-      app = firebase.initializeApp(config);
-    } else {
-      app = firebase.app();
+    if (firebase.apps.length) {
+      try {
+        await firebase.app().delete();
+      } catch (e) {
+        console.warn("Erro ao deletar app anterior:", e);
+      }
     }
     
+    app = firebase.initializeApp(config);
     dbFirebase = firebase.firestore(app);
     
     // Habilita persistência offline (suporte offline nativo do Firestore no PWA)
-    dbFirebase.enablePersistence().catch(err => {
+    try {
+      await dbFirebase.enablePersistence();
+    } catch (err) {
       if (err.code === 'failed-precondition') {
         console.warn("Firestore: Persistência falhou (múltiplas abas abertas).");
       } else if (err.code === 'unimplemented') {
         console.warn("Firestore: O navegador não suporta persistência offline.");
       }
-    });
+    }
     
     return true;
   } catch (err) {
@@ -1992,7 +1997,7 @@ async function iniciarSincronizacaoNuvem() {
   }
 
   try {
-    const sucesso = inicializarFirebase(config);
+    const sucesso = await inicializarFirebase(config);
     if (!sucesso) {
       atualizarUIStatusNuvem(false);
       return;
@@ -2159,7 +2164,7 @@ window.conectarNuvemFirebase = async function() {
     }
 
     // Tenta inicializar
-    const sucesso = inicializarFirebase(configObj);
+    const sucesso = await inicializarFirebase(configObj);
     if (sucesso) {
       localStorage.setItem('meus-treinos-firebase-config', JSON.stringify(configObj));
       
