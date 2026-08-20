@@ -165,7 +165,7 @@ const EXERCICIOS_PADRAO = [
     id: "levantamento_terra_romeno",
     nome: "Levantamento Terra Romeno",
     grupo: "Pernas",
-    imagem: "assets/levantamento_terra_romeno.png",
+    imagem: "assets/levantamento_terra_romeno.jpg",
     videoUrl: "https://www.youtube.com/results?search_query=execucao+correta+levantamento+terra+romeno",
     passos: [
       "Fique em pé com os pés na largura dos quadris, segurando a barra à frente das coxas.",
