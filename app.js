@@ -2131,17 +2131,27 @@ window.conectarNuvemFirebase = async function() {
   try {
     let configObj = null;
     
-    if (valor.includes('{') && valor.includes('}')) {
-      const extrairJson = valor.substring(valor.indexOf('{'), valor.lastIndexOf('}') + 1);
-      const jsonLimpo = extrairJson
-        .replace(/([a-zA-Z0-9]+):/g, '"$1":') 
-        .replace(/'/g, '"') 
-        .replace(/,\s*}/g, '}') 
-        .replace(/\/\/.*$/gm, ''); 
-      
-      configObj = JSON.parse(jsonLimpo);
-    } else {
-      configObj = JSON.parse(valor);
+    // Remove declarações como const/let/var/window.firebaseConfig = e o ponto e vírgula no final
+    let cleanedCode = valor
+      .replace(/^(const|let|var)\s+\w+\s*=\s*/, '')
+      .replace(/^window\.\w+\s*=\s*/, '')
+      .replace(/;\s*$/, '')
+      .trim();
+
+    try {
+      configObj = new Function(`return ${cleanedCode}`)();
+    } catch (e) {
+      // Fallback: tenta extrair e avaliar apenas o conteúdo entre chaves { }
+      if (valor.includes('{') && valor.includes('}')) {
+        const extrairJson = valor.substring(valor.indexOf('{'), valor.lastIndexOf('}') + 1);
+        configObj = new Function(`return ${extrairJson}`)();
+      } else {
+        throw e;
+      }
+    }
+
+    if (!configObj || typeof configObj !== 'object') {
+      throw new Error("O valor inserido não pôde ser convertido em um objeto.");
     }
 
     if (!configObj.apiKey || !configObj.projectId) {
